@@ -2,6 +2,22 @@ use crate::mem::Memory;
 use crate::operation;
 use crate::utils;
 
+/*
+6502 status flags
+
+7  bit  0
+---- ----
+NVss DIZC
+|||| ||||
+|||| |||+- 0 Carry
+|||| ||+-- 1 Zero
+|||| |+--- 2 Interrupt Disable
+|||| +---- 3 Decimal
+||++------ 4,5 No CPU effect, see: the B flag
+|+-------- 6 Overflow
++--------- 7 Negative
+*/
+
 const DEFAULT_FLAGS: u8 = 0b0011_0000;
 const FLAG_NEGATIVE: u8 = 0b1000_0000;
 const FLAG_OVERFLOW: u8 = 0b0100_0000;
@@ -428,20 +444,27 @@ impl CPU {
         self.pc = self.get_operand_address(operation);
     }
 
-    fn operation_asl(&mut self, _op: &operation::Operation) {
-        self.clear_carry();
-        if self.a >> 7 == 1 {
+    fn operation_asl(&mut self, op: &operation::Operation) {
+        let mut operand = self.get_operand(op);
+
+        if operand >> 7 == 1 {
             self.set_carry(); // bit 7 to carry
+        } else {
+            self.clear_carry()
         }
 
-        self.a <<= 1;
+        operand <<= 1;
 
-        if self.get_zero() != 0 {
-            // zero flag to 0 bit
-            self.a |= 0b0000_0001;
+        self.set_zero_if_needed(operand);
+        self.set_negative_if_needed(operand);
+
+        match op.addressing {
+            operation::AddressingMode::AccumulatorAddressing => self.a = operand,
+            _ => {
+                let addr = self.get_operand_address(op);
+                self.memory.set(addr, operand);
+            }
         }
-        self.set_zero_if_needed(self.a);
-        self.set_negative_if_needed(self.a);
     }
 
     fn operation_bit(&mut self, op: &operation::Operation) {
@@ -458,17 +481,14 @@ impl CPU {
 
     fn operation_rol(&mut self, op: &operation::Operation) {
         // rotate left, carry to 0 bit and 7 bit to carry
-        let mut value = match op.addressing {
-            operation::AddressingMode::AccumulatorAddressing => self.a,
-            _ => self.get_operand(op),
-        };
+        let mut value = self.get_operand(op);
 
         let original_carry = match self.get_carry() {
             FLAG_CARRY => true,
             _ => false,
         };
 
-        if (value & 0x80) != 0 {
+        if (value >> 7) != 0 {
             self.set_carry();
         } else {
             self.clear_carry();
@@ -515,29 +535,29 @@ impl CPU {
 
         self.set_zero_if_needed(value);
         self.set_negative_if_needed(value);
-        let addr = self.get_operand_address(op);
 
         match op.addressing {
             operation::AddressingMode::AccumulatorAddressing => self.a = value,
-            _ => self.memory.set(addr, value),
+            _ => {
+                let addr = self.get_operand_address(op);
+                self.memory.set(addr, value)
+            }
         }
     }
 
     fn operation_lsr(&mut self, op: &operation::Operation) {
-        let operand = match op.addressing {
-            operation::AddressingMode::AccumulatorAddressing => self.a,
-            _ => self.get_operand(op),
-        };
-        let zero_bit = operand & 0xF;
+        let operand = self.get_operand(op);
+        let zero_bit = (operand << 7) > 0;
         let value = operand >> 1;
 
-        if zero_bit != 0 {
+        if zero_bit {
             self.set_carry();
         } else {
             self.clear_carry();
         }
 
         self.set_zero_if_needed(value);
+        self.set_negative_if_needed(value);
 
         match op.addressing {
             operation::AddressingMode::AccumulatorAddressing => self.a = value,
@@ -741,8 +761,13 @@ impl CPU {
     }
 
     fn get_operand(&mut self, op: &operation::Operation) -> u8 {
-        let addr = self.get_operand_address(op);
-        self.memory.get(addr)
+        match op.addressing {
+            operation::AddressingMode::AccumulatorAddressing => self.a,
+            _ => {
+                let addr = self.get_operand_address(op);
+                self.memory.get(addr)
+            }
+        }
     }
 
     fn get_operand_address(&mut self, op: &operation::Operation) -> u16 {
@@ -1975,6 +2000,23 @@ mod tests {
     }
 
     #[test]
+    fn operation_lsr_accumulator() {
+        let mut cpu = CPU::new();
+        let program: [u8; 1] = [operation::by_name_and_addressing(
+            "LSR",
+            operation::AddressingMode::AccumulatorAddressing,
+        )
+        .code];
+        cpu.a = 0x41;
+
+        cpu.load(&program, 0x800);
+        cpu.step();
+
+        assert_eq!(cpu.a, 0x20);
+        assert_eq!(cpu.p, 0b0011_0001);
+    }
+
+    #[test]
     fn sbc_simple_test() {
         let mut cpu = CPU::new();
         cpu.a = 10;
@@ -2385,6 +2427,41 @@ mod tests {
         cpu.step();
 
         assert_eq!(cpu.pc, 0xABCD);
+    }
+
+    #[test]
+    fn asl_accumulator_zero() {
+        let mut cpu = CPU::new();
+
+        let program: [u8; 1] = [operation::by_name_and_addressing(
+            "ASL",
+            operation::AddressingMode::AccumulatorAddressing,
+        )
+        .code];
+        cpu.a = 0;
+        cpu.load(&program, 0x0);
+        cpu.step();
+
+        assert_eq!(cpu.a, 0);
+        assert_eq!(cpu.p, 0b00110010);
+    }
+
+    #[test]
+    fn asl_accumulator_zero_with_1_from_status() {
+        let mut cpu = CPU::new();
+
+        let program: [u8; 1] = [operation::by_name_and_addressing(
+            "ASL",
+            operation::AddressingMode::AccumulatorAddressing,
+        )
+        .code];
+        cpu.a = 0;
+        cpu.p = 0b1111_1111;
+        cpu.load(&program, 0x0);
+        cpu.step();
+
+        assert_eq!(cpu.a, 0);
+        assert_eq!(cpu.p, 0b01111110);
     }
 
     #[test]

@@ -69,6 +69,12 @@ pub static OPERATIONS: &'static [Operation] = &[
     },
     Operation {
         name: "INC",
+        code: 0xFE,
+        length: 3,
+        addressing: AddressingMode::AbsoluteIndexedX,
+    },
+    Operation {
+        name: "INC",
         code: 0xE6,
         length: 2,
         addressing: AddressingMode::ZeroPage,
@@ -261,6 +267,18 @@ pub static OPERATIONS: &'static [Operation] = &[
         length: 3,
         addressing: AddressingMode::AbsoluteIndexedY,
     },
+    Operation {
+        name: "ADC",
+        code: 0x61,
+        length: 2,
+        addressing: AddressingMode::IndirectIndexedX,
+    },
+    Operation {
+        name: "ADC",
+        code: 0x71,
+        length: 2,
+        addressing: AddressingMode::IndirectIndexed,
+    },
     // SBC
     Operation {
         name: "SBC",
@@ -273,6 +291,18 @@ pub static OPERATIONS: &'static [Operation] = &[
         code: 0xED,
         length: 3,
         addressing: AddressingMode::Absolute,
+    },
+    Operation {
+        name: "SBC",
+        code: 0xFD,
+        length: 3,
+        addressing: AddressingMode::AbsoluteIndexedX,
+    },
+    Operation {
+        name: "SBC",
+        code: 0xF9,
+        length: 3,
+        addressing: AddressingMode::AbsoluteIndexedY,
     },
     Operation {
         name: "SBC",
@@ -291,6 +321,12 @@ pub static OPERATIONS: &'static [Operation] = &[
         code: 0xF1,
         length: 2,
         addressing: AddressingMode::IndirectIndexed,
+    },
+    Operation {
+        name: "SBC",
+        code: 0xE1,
+        length: 2,
+        addressing: AddressingMode::IndirectIndexedX,
     },
     Operation {
         name: "STX",
@@ -455,6 +491,48 @@ pub static OPERATIONS: &'static [Operation] = &[
         code: 0x49,
         length: 2,
         addressing: AddressingMode::Immediate,
+    },
+    Operation {
+        name: "EOR",
+        code: 0x45,
+        length: 2,
+        addressing: AddressingMode::ZeroPage,
+    },
+    Operation {
+        name: "EOR",
+        code: 0x55,
+        length: 2,
+        addressing: AddressingMode::ZeroPageIndexedX,
+    },
+    Operation {
+        name: "EOR",
+        code: 0x4D,
+        length: 3,
+        addressing: AddressingMode::Absolute,
+    },
+    Operation {
+        name: "EOR",
+        code: 0x5D,
+        length: 3,
+        addressing: AddressingMode::AbsoluteIndexedX,
+    },
+    Operation {
+        name: "EOR",
+        code: 0x59,
+        length: 3,
+        addressing: AddressingMode::AbsoluteIndexedY,
+    },
+    Operation {
+        name: "EOR",
+        code: 0x41,
+        length: 2,
+        addressing: AddressingMode::IndirectIndexedX,
+    },
+    Operation {
+        name: "EOR",
+        code: 0x51,
+        length: 2,
+        addressing: AddressingMode::IndirectIndexed,
     },
     // CMP
     Operation {
@@ -691,7 +769,7 @@ pub static OPERATIONS: &'static [Operation] = &[
     Operation {
         name: "ROL",
         code: 0x36,
-        length: 3,
+        length: 2,
         addressing: AddressingMode::ZeroPageIndexedX,
     },
     Operation {
@@ -721,9 +799,21 @@ pub static OPERATIONS: &'static [Operation] = &[
     },
     Operation {
         name: "ROR",
+        code: 0x76,
+        length: 2,
+        addressing: AddressingMode::ZeroPageIndexedX,
+    },
+    Operation {
+        name: "ROR",
         code: 0x6E,
         length: 3,
         addressing: AddressingMode::Absolute,
+    },
+    Operation {
+        name: "ROR",
+        code: 0x7E,
+        length: 3,
+        addressing: AddressingMode::AbsoluteIndexedX,
     },
     Operation {
         name: "TXS",
@@ -765,9 +855,51 @@ pub static OPERATIONS: &'static [Operation] = &[
     // AND
     Operation {
         name: "AND",
+        code: 0x25,
+        length: 2,
+        addressing: AddressingMode::ZeroPage,
+    },
+    Operation {
+        name: "AND",
+        code: 0x35,
+        length: 2,
+        addressing: AddressingMode::ZeroPageIndexedX,
+    },
+    Operation {
+        name: "AND",
         code: 0x29,
         length: 2,
         addressing: AddressingMode::Immediate,
+    },
+    Operation {
+        name: "AND",
+        code: 0x2D,
+        length: 3,
+        addressing: AddressingMode::Absolute,
+    },
+    Operation {
+        name: "AND",
+        code: 0x3D,
+        length: 3,
+        addressing: AddressingMode::AbsoluteIndexedX,
+    },
+    Operation {
+        name: "AND",
+        code: 0x39,
+        length: 3,
+        addressing: AddressingMode::AbsoluteIndexedY,
+    },
+    Operation {
+        name: "AND",
+        code: 0x21,
+        length: 2,
+        addressing: AddressingMode::IndirectIndexedX,
+    },
+    Operation {
+        name: "AND",
+        code: 0x31,
+        length: 2,
+        addressing: AddressingMode::IndirectIndexed,
     },
     //
     // ORA

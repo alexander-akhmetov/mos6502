@@ -70,7 +70,9 @@ fn main() {
             brk = true;
             info!("possible cycle detected");
         }
+        if cpu.pc == 3399 {
+            brk = true;
+            info!("SUCCESS");
+        }
     }
-
-    info!("mem 000F: 0x{:X}", cpu.memory.get(0x000F));
 }
