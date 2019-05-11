@@ -1,94 +1,50 @@
-# Apple1 emulator
+# MOS 6502 CPU emulator
 
-## How to use
+[![Build Status](https://travis-ci.org/alexander-akhmetov/mos6502.svg?branch=master)](https://travis-ci.org/alexander-akhmetov/mos6502)
 
-Run binary:
+Simple emulator of the [MOS 6502](https://en.wikipedia.org/wiki/MOS_Technology_6502) CPU.
+I used it to build an [Apple-1](https://github.com/alexander-akhmetov/apple1) emulator.
 
-```
-cargo run --features build-binary --bin apple1
-```
+## Usage
 
-The command above starts Apple1 with WozMonitor at the address `0xFF00`. You should see the screen and the command line prompt:
+```rust
+let mut cpu = mos6502::cpu::CPU::new();
 
-```
-\
-<cursor>
-```
+let program = "LDA #$c0
+TAX
+INX
+ADC #$c4";
 
+// you can skip this step,
+// if you load an assembled machine code
+let bytes = mos6502::asm::assemble(&program);
 
-With optional flag `-p` you can load an additional program to the memory:
+cpu.load(&bytes, 0x800);
 
-```
-cargo run --features build-binary --bin apple1 -- -p asm/apple1hello.asm
-```
-It will be loaded to the memory with starting address `0xE000`. To run it using Woz Monitor type `E000R` and press enter.
-To see the hex content of the program: `E000..<END ADDR>`, for example: `E000.E0FF`.
-
-## Debug
-
-You can disable the screen and enable debug logging:
-
-```
-RUST_LOG=debug cargo run --features build-binary --bin apple1 -- -p asm/apple1hello.asm
+cpu.run();
 ```
 
 ## Tests
 
 Run tests:
 
-```
+```shell
 cargo test
 ```
 
-Run tests with logging:
+### Functional tests
 
+You can download functional tests from this [repository](https://github.com/Klaus2m5/6502_65C02_functional_tests).
+Put the `6502_functional_test.bin` file to the root of the repository and then run:
+
+```shell
+wget "https://github.com/Klaus2m5/6502_65C02_functional_tests/blob/master/bin_files/6502_functional_test.bin?raw=true" -O 6502_functional_test.bin
+
+make functional-tests
 ```
-RUST_LOG=mos6502=debug cargo test -- --nocapture
-```
-
-## Apple 1 Basic
-
-* [BASIC source code listing](https://github.com/jefftranter/6502/blob/master/asm/a1basic/a1basic.s)
-* [Disassembled BASIC](http://www.brouhaha.com/~eric/retrocomputing/apple/apple1/basic/)
-
-
-There are two different ROMs, one of them is from Replica1 and it works. The original one, `roms/apple1basic.bin` does not work yet. Seems like it tries to read DSP at `0xD0F2` instead of `0xD012`. You can inspect this if you load it and then print hex data at `E3D5.E3DF` with WozMonitor.
-
-	note: http://www.brielcomputers.com/phpBB3/viewtopic.php?f=10&t=404
-	discussion about the same problem
-
-```
-E3D5.E3DF
-
-E3D5: 2C F2 D0
-E3D8: 30 FB 8D F2 D0 60 A0 06
-```
-
-Replica1 basic content:
-
-```
-E3D5.E3DF
-
-E3D5: 2C 12 D0
-E3D8: 30 FB 8D 12 D0 60 A0 06
-```
-
-### Start basic
-
-```
-RUST_LOG=error cargo run --features build-binary --bin apple1 -- -p roms/replica1.bin -b
-```
-
-and then type `E000R`.
-
 
 ## Resources
 
 * [6502 instruction set](https://www.masswerk.at/6502/6502_instruction_set.html#BIT)
-* [Apple1 BASIC manual](https://archive.org/stream/apple1_basic_manual/apple1_basic_manual_djvu.txt)
-* [www.applefritter.com](https://www.applefritter.com)
 * [6502 memory test](http://www.willegal.net/appleii/6502mem.htm)
-* [apple1 programs](http://hoop-la.ca/apple2/2008/retrochallenge.net.html)
-* [apple1 programs 2](http://www.willegal.net/appleii/apple1-software.htm)
-* [Woz Monitor description](https://www.sbprojects.net/projects/apple1/wozmon.php)
 * [6502 instructions description with undocumented commands](http://www.zimmers.net/anonftp/pub/cbm/documents/chipdata/64doc)

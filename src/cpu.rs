@@ -3,19 +3,6 @@ use crate::operation;
 use crate::utils;
 
 /*
-6502 status flags
-
-7  bit  0
----- ----
-NVss DIZC
-|||| ||||
-|||| |||+- 0 Carry
-|||| ||+-- 1 Zero
-|||| |+--- 2 Interrupt Disable
-|||| +---- 3 Decimal
-||++------ 4,5 No CPU effect, see: the B flag
-|+-------- 6 Overflow
-+--------- 7 Negative
 */
 
 const DEFAULT_FLAGS: u8 = 0b0011_0000;
@@ -29,26 +16,36 @@ const FLAG_CARRY: u8 = 0b0000_0001;
 
 const STACK_BOTTOM: u16 = 0x0100;
 
+#[derive(Default)]
 pub struct CPU {
+    // register A
     pub a: u8,
+    // register X
     pub x: u8,
+    // regiser Y
     pub y: u8,
 
-    // status register
-    // Bit No. 7 6 5 4 3 2 1 0
-    //         N O   B D I Z C
-    // bit 5 is not used, supposed to be 1 all the time
-    // C - carry
-    // Z - zero
-    // I - interrupt disable
-    // D - decimal
-    // B -
-    // O - overflow
-    // N - negative
+    /*
+    6502 status flags
+
+    7 6 5 4 3 2 1 0
+    ---------------
+    N V s s D I Z C
+    | | | | | | | |
+    | | | | | | | +- 0 Carry
+    | | | | | | +--- 1 Zero
+    | | | | | +----- 2 Interrupt Disable
+    | | | | +------- 3 Decimal
+    | | + +--------- 4,5 Not used (B flag)
+    | +------------- 6 Overflow
+    +--------------- 7 Negative
+    */
     pub p: u8,
+
+    // stack pointer
     pub sp: u8,
 
-    //
+    // program counter
     pub pc: u16,
     pub memory: Memory,
     pub cycle: usize,
@@ -79,11 +76,13 @@ impl CPU {
             "[cpu] [PC:${:04X} SP:${:02X} STP:${:02X} A:${:02X} X:${:02X} Y:${:02X} P:{:08b}] (op:{} code:${:02X} length:{} data:{:X?}) cycle:{}",
             self.pc, self.sp, self.memory.get(STACK_BOTTOM + 0xff), self.a, self.x, self.y, self.p, operation.name, operation.code,
             operation.length,
-            &self.memory.bytes()[(self.pc) as usize..(self.pc + operation.length as u16) as usize],
+            &self.memory.bytes()[(self.pc) as usize..(self.pc + u16::from(operation.length)) as usize],
             self.cycle
         );
 
         self.pc += u16::from(operation.length);
+
+        // cycles don't work yet
         self.cycle += 1;
 
         match operation.name {
@@ -185,6 +184,8 @@ impl CPU {
     }
 
     fn operation_tax(&mut self) {
+        // Transfer Accumulator to Index X
+        // A -> X
         self.x = self.a;
 
         self.set_zero_if_needed(self.x);
@@ -192,6 +193,8 @@ impl CPU {
     }
 
     fn operation_dex(&mut self) {
+        // Decrement X by one
+        // X = X - 1
         let (result, _) = self.x.overflowing_sub(1);
         self.x = result;
 
@@ -200,6 +203,8 @@ impl CPU {
     }
 
     fn operation_dey(&mut self) {
+        // Decrement Y by one
+        // Y = Y - 1
         let (result, _) = self.y.overflowing_sub(1);
         self.y = result;
 
@@ -208,6 +213,7 @@ impl CPU {
     }
 
     fn operation_brk(&mut self) {
+        // Break
         // set B flag (0b0001_0000)
         self.set_b();
         // push return address (it's already incremented by 1, so we increment it only by 1)
@@ -221,6 +227,7 @@ impl CPU {
     }
 
     fn operation_rti(&mut self) {
+        // Return from interrupt
         self.p = self.stack_pop();
         self.pc = self.stack_pop_word();
     }
@@ -230,6 +237,8 @@ impl CPU {
     }
 
     fn operation_inc(&mut self, operation: &operation::Operation) {
+        // Increment memory by 1
+        // M = M + 1
         let addr = self.get_operand_address(operation);
         let value = self.memory.get(addr);
         let (result, _) = value.overflowing_add(1);
@@ -240,6 +249,8 @@ impl CPU {
     }
 
     fn operation_dec(&mut self, op: &operation::Operation) {
+        // Decrement memory by 1
+        // M = M - 1
         let addr = self.get_operand_address(op);
         let value = self.memory.get(addr);
         let (result, _) = value.overflowing_sub(1);
@@ -250,6 +261,8 @@ impl CPU {
     }
 
     fn operation_inx(&mut self) {
+        // Increment X by 1
+        // X = X + 1
         let (result, _) = self.x.overflowing_add(1);
         self.x = result;
 
@@ -258,6 +271,8 @@ impl CPU {
     }
 
     fn operation_iny(&mut self) {
+        // Increment Y by 1
+        // Y = Y + 1
         let (result, _) = self.y.overflowing_add(1);
         self.y = result;
 
@@ -266,6 +281,8 @@ impl CPU {
     }
 
     fn operation_ora(&mut self, op: &operation::Operation) {
+        // OR memory with accumulator
+        // A = M OR A
         self.a |= self.get_operand(op);
 
         self.set_negative_if_needed(self.a);
@@ -273,6 +290,8 @@ impl CPU {
     }
 
     fn operation_and(&mut self, op: &operation::Operation) {
+        // AND memory with accumulator
+        // A = M AND A
         self.a &= self.get_operand(op);
 
         self.set_negative_if_needed(self.a);
@@ -280,6 +299,8 @@ impl CPU {
     }
 
     fn operation_eor(&mut self, op: &operation::Operation) {
+        // Exclusive-OR memory with accumulator
+        // A = A XOR M
         self.a ^= self.get_operand(op);
 
         self.set_negative_if_needed(self.a);
@@ -287,6 +308,8 @@ impl CPU {
     }
 
     fn operation_ldx(&mut self, operation: &operation::Operation) {
+        // Load X from memory
+        // M -> X
         self.x = self.get_operand(operation);
 
         self.set_negative_if_needed(self.x);
@@ -294,6 +317,8 @@ impl CPU {
     }
 
     fn operation_ldy(&mut self, operation: &operation::Operation) {
+        // Load Y from memory
+        // M -> Y
         self.y = self.get_operand(operation);
 
         self.set_negative_if_needed(self.y);
@@ -301,6 +326,8 @@ impl CPU {
     }
 
     fn operation_lda(&mut self, op: &operation::Operation) {
+        // Load A from memory
+        // M -> A
         self.a = self.get_operand(op);
 
         self.set_negative_if_needed(self.a);
@@ -308,6 +335,7 @@ impl CPU {
     }
 
     fn operation_sbc(&mut self, op: &operation::Operation) {
+        // Subtract memory from accumulator with borrow
         // SBC uses the complement of the carry
         let operand = self.get_operand(op);
         let carry = i16::from(1 - self.get_carry());
@@ -339,6 +367,7 @@ impl CPU {
     }
 
     fn operation_adc(&mut self, op: &operation::Operation) {
+        // Add memory to accumulator with carry
         let operand = u16::from(self.get_operand(op));
         let original_a = u16::from(self.a);
         let result = original_a + operand + u16::from(self.get_carry());
@@ -361,12 +390,14 @@ impl CPU {
     }
 
     fn operation_beq(&mut self, operation: &operation::Operation) {
+        // Branch on result zero (Z == 1)
         if self.get_zero() == FLAG_ZERO {
             self.branch(operation);
         }
     }
 
     fn operation_bne(&mut self, operation: &operation::Operation) {
+        // Branch on result not zero (Z == 0)
         if self.get_zero() != FLAG_ZERO {
             self.branch(operation);
         }
@@ -384,47 +415,55 @@ impl CPU {
     }
 
     fn operation_bcc(&mut self, operation: &operation::Operation) {
+        // Branch on carry clear (C == 0)
         if self.get_carry() == 0 {
             self.branch(operation);
         }
     }
 
     fn operation_bvs(&mut self, operation: &operation::Operation) {
+        // Branch on overflow set (V == 1)
         if self.get_overflow() != 0 {
             self.branch(operation);
         }
     }
 
     fn operation_bvc(&mut self, operation: &operation::Operation) {
+        // Branch on overflow clear (V == 0)
         if self.get_overflow() == 0 {
             self.branch(operation);
         }
     }
 
     fn operation_bcs(&mut self, operation: &operation::Operation) {
+        // Branch on carry set (C == 1)
         if self.get_carry() != 0 {
             self.branch(operation);
         }
     }
 
     fn operation_bmi(&mut self, operation: &operation::Operation) {
+        // Branch on minus (N == 1)
         if self.get_negative() == FLAG_NEGATIVE {
             self.branch(operation);
         }
     }
 
     fn operation_bpl(&mut self, operation: &operation::Operation) {
+        // Branch on plus (N == 0)
         if self.get_negative() == 0 {
             self.branch(operation);
         }
     }
 
     fn operation_cpy(&mut self, operation: &operation::Operation) {
+        // Compare memory and Y
         let operand = self.get_operand(operation);
         self.compare(self.y, operand);
     }
 
     fn operation_jmp(&mut self, op: &operation::Operation) {
+        // jump to a new address
         match op.addressing {
             operation::AddressingMode::IndirectAbsolute => {
                 let addr = self.get_operand_address(op);
@@ -436,15 +475,19 @@ impl CPU {
     }
 
     fn operation_rts(&mut self) {
+        // Return from subroutine
         self.pc = self.stack_pop_word() + 1;
     }
 
     fn operation_jsr(&mut self, operation: &operation::Operation) {
+        // Jump to subroutine
         self.stack_push_word(self.pc - 1);
         self.pc = self.get_operand_address(operation);
     }
 
     fn operation_asl(&mut self, op: &operation::Operation) {
+        // Shift left one bit
+        // C <- [76543210] <- 0
         let mut operand = self.get_operand(op);
 
         if operand >> 7 == 1 {
@@ -468,6 +511,8 @@ impl CPU {
     }
 
     fn operation_bit(&mut self, op: &operation::Operation) {
+        // Test bits in ьemory with accumulator
+        // A AND M, M7 -> N, M6 -> V
         let operand = self.get_operand(op);
 
         self.set_zero_if_needed(self.a & operand);
@@ -481,6 +526,7 @@ impl CPU {
 
     fn operation_rol(&mut self, op: &operation::Operation) {
         // rotate left, carry to 0 bit and 7 bit to carry
+        // C <- [76543210] <- C
         let mut value = self.get_operand(op);
 
         let original_carry = match self.get_carry() {
@@ -514,6 +560,7 @@ impl CPU {
 
     fn operation_ror(&mut self, op: &operation::Operation) {
         // rotate right, carry to 7 bit and 0 bit to carry
+        // C -> [76543210] -> C
         let mut value = self.get_operand(op);
 
         let original_carry = match self.get_carry() {
@@ -546,6 +593,8 @@ impl CPU {
     }
 
     fn operation_lsr(&mut self, op: &operation::Operation) {
+        // Shift one bit right
+        // 0 -> [76543210] -> C
         let operand = self.get_operand(op);
         let zero_bit = (operand << 7) > 0;
         let value = operand >> 1;
@@ -569,12 +618,14 @@ impl CPU {
     }
 
     fn operation_txa(&mut self) {
+        // X -> A
         self.a = self.x;
         self.set_negative_if_needed(self.a);
         self.set_zero_if_needed(self.a);
     }
 
     fn operation_tay(&mut self) {
+        // A -> Y
         self.y = self.a;
         self.set_negative_if_needed(self.y);
         self.set_zero_if_needed(self.y);
@@ -585,26 +636,31 @@ impl CPU {
     }
 
     fn operation_tsx(&mut self) {
+        // SP -> X
         self.x = self.sp;
         self.set_negative_if_needed(self.x);
         self.set_zero_if_needed(self.x);
     }
 
     fn operation_php(&mut self) {
+        // Push P to stack
         self.stack_push(self.p);
     }
 
     fn operation_plp(&mut self) {
+        // Pull P from stack
         self.p = self.stack_pop() | 0b0011_0000;
     }
 
     fn operation_tya(&mut self) {
+        // Y -> A
         self.a = self.y;
         self.set_negative_if_needed(self.y);
         self.set_zero_if_needed(self.y);
     }
 
     fn operation_pha(&mut self) {
+        // Push A to stack
         self.stack_push(self.a);
     }
 
@@ -625,26 +681,29 @@ impl CPU {
 
     fn stack_push(&mut self, value: u8) {
         self.memory.set(STACK_BOTTOM + u16::from(self.sp), value);
-        self.sp = (((self.sp as i16) - 1) & 0xFF) as u8;
+        self.sp = ((u16::from(self.sp) - 1) & 0xFF) as u8;
     }
 
     fn operation_pla(&mut self) {
+        // Pull A from stack
         self.a = self.stack_pop();
         self.set_negative_if_needed(self.a);
         self.set_zero_if_needed(self.a);
     }
 
     fn stack_pop(&mut self) -> u8 {
-        self.sp = (((self.sp as i16) + 1) & 0xFF) as u8;
+        self.sp = ((i16::from(self.sp) + 1) & 0xFF) as u8;
         self.memory.get(STACK_BOTTOM + u16::from(self.sp))
     }
 
     fn operation_cmp(&mut self, operation: &operation::Operation) {
+        // Compare memory and A
         let operand = self.get_operand(operation);
         self.compare(self.a, operand);
     }
 
     fn operation_cpx(&mut self, operation: &operation::Operation) {
+        // Compare memory and X
         let operand = self.get_operand(operation);
         self.compare(self.x, operand);
     }
@@ -790,7 +849,7 @@ impl CPU {
                 let addr = u16::from(self.next_byte_number());
                 let value =
                     utils::little_endian_to_u16(self.memory.get(addr + 1), self.memory.get(addr));
-                value + self.y as u16
+                value + u16::from(self.y)
             }
             operation::AddressingMode::RelativeAddressing => self.pc - 1,
             operation::AddressingMode::AbsoluteIndexedY => {
