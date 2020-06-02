@@ -1,7 +1,5 @@
 # MOS 6502 CPU emulator
 
-[![Build Status](https://travis-ci.org/alexander-akhmetov/mos6502.svg?branch=master)](https://travis-ci.org/alexander-akhmetov/mos6502)
-
 Simple emulator of the [MOS 6502](https://en.wikipedia.org/wiki/MOS_Technology_6502) CPU.
 I used it to build an [Apple-1](https://github.com/alexander-akhmetov/apple1) emulator.
 

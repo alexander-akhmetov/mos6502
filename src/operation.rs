@@ -22,7 +22,7 @@ pub struct Operation {
     pub addressing: AddressingMode,
 }
 
-pub static OPERATIONS: &'static [Operation] = &[
+pub static OPERATIONS: &[Operation] = &[
     Operation {
         name: "BRK",
         code: 0x00,
@@ -959,7 +959,7 @@ pub fn by_code(code: u8) -> &'static Operation {
     let opcode = OPERATIONS.iter().find(|o| o.code == code);
 
     if let Some(opcode) = opcode {
-        return opcode;
+        opcode
     } else {
         error!("Unknown operation code: 0x{:X}", code);
         panic!("unknown operation code");

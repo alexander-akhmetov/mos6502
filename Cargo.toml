@@ -7,7 +7,6 @@ edition = "2018"
 [lib]
 name = "mos6502"
 path = "src/lib.rs"
-authors = ["Alexander Akhmetov <me@aleks.sh>"]
 edition = "2018"
 
 [[bin]]
