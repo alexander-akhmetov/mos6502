@@ -1,0 +1,15 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  reviewers:
+  - alexander-akhmetov
+  assignees:
+  - alexander-akhmetov
+  ignore:
+  - dependency-name: env_logger
+    versions:
+    - 0.8.2
