@@ -529,11 +529,7 @@ impl CPU {
         // C <- [76543210] <- C
         let mut value = self.get_operand(op);
 
-        let original_carry = match self.get_carry() {
-            FLAG_CARRY => true,
-            _ => false,
-        };
-
+        let original_carry = matches!(self.get_carry(), FLAG_CARRY);
         if (value >> 7) != 0 {
             self.set_carry();
         } else {
@@ -563,11 +559,7 @@ impl CPU {
         // C -> [76543210] -> C
         let mut value = self.get_operand(op);
 
-        let original_carry = match self.get_carry() {
-            FLAG_CARRY => true,
-            _ => false,
-        };
-
+        let original_carry = matches!(self.get_carry(), FLAG_CARRY);
         if (value & 0x01) != 0 {
             self.set_carry();
         } else {

@@ -30,7 +30,7 @@ fn main() {
         .unwrap_or("6502_functional_test.bin");
 
     if !Path::new(filename).exists() {
-        panic!(format!("File {} does not exist", filename))
+        panic!("File {} does not exist", filename)
     }
 
     cpu.load(&fs::read(filename).unwrap(), 0);
