@@ -74,9 +74,18 @@ impl CPU {
         let operation = operation::by_code(self.memory.get(self.pc));
         info!(
             "[cpu] [PC:${:04X} SP:${:02X} STP:${:02X} A:${:02X} X:${:02X} Y:${:02X} P:{:08b}] (op:{} code:${:02X} length:{} data:{:X?}) cycle:{}",
-            self.pc, self.sp, self.memory.get(STACK_BOTTOM + 0xff), self.a, self.x, self.y, self.p, operation.name, operation.code,
+            self.pc,
+            self.sp,
+            self.memory.get(STACK_BOTTOM + 0xff),
+            self.a,
+            self.x,
+            self.y,
+            self.p,
+            operation.name,
+            operation.code,
             operation.length,
-            &self.memory.bytes()[(self.pc) as usize..(self.pc + u16::from(operation.length)) as usize],
+            &self.memory.bytes()
+                [(self.pc) as usize..(self.pc + u16::from(operation.length)) as usize],
             self.cycle
         );
 

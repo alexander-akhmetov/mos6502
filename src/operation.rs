@@ -981,10 +981,10 @@ pub fn by_name_and_addressing(name: &str, addressing: AddressingMode) -> &'stati
 
 #[cfg(test)]
 mod tests {
-    use crate::operation::{by_name_and_addressing, AddressingMode};
+    use crate::operation::{AddressingMode, by_name_and_addressing};
 
     macro_rules! test_opcode {
-        ($test_name:ident, $name:expr, $mode:expr, $expected:expr) => {
+        ($test_name:ident, $name:expr_2021, $mode:expr_2021, $expected:expr_2021) => {
             #[test]
             fn $test_name() {
                 assert_eq!(by_name_and_addressing($name, $mode).code, $expected);

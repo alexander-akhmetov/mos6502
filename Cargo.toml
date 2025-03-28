@@ -2,12 +2,12 @@
 name = "mos6502"
 version = "0.1.0"
 authors = ["Alexander Akhmetov <me@aleks.sh>"]
-edition = "2021"
+edition = "2024"
 
 [lib]
 name = "mos6502"
 path = "src/lib.rs"
-edition = "2018"
+edition = "2024"
 
 [[bin]]
 name = "mos6502-functional-tests"
@@ -16,8 +16,9 @@ required-features = ["build-binary"]
 
 [dependencies]
 log = "0.4"
-env_logger = {version = "0.7.1", optional = true }
-clap = {version = "2.33.3", optional = true }
+env_logger = {version = "0.11", optional = true } # Update env_logger
+# Note: Updating clap from v2 to v4 is a major change and requires code adjustments.
+clap = {version = "4.5", optional = true, features = ["derive"] } # Update clap and add derive feature
 
 [features]
 build-binary = ["clap", "env_logger"]

@@ -5,32 +5,37 @@ extern crate mos6502;
 use mos6502::cpu::CPU;
 
 extern crate clap;
-use clap::{App, Arg};
+// Use clap's derive feature for argument parsing
+use clap::Parser;
 
 #[macro_use]
 extern crate log;
 extern crate env_logger;
 
+/// MOS 6502 functional test runner
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[arg(
+        value_name = "FILE",
+        default_value = "6502_functional_test.bin"
+    )]
+    binary: String,
+}
+
 fn main() {
     env_logger::init();
 
-    let matches = App::new("MOS 6502 functional test runner")
-        .arg(
-            Arg::with_name("binary")
-                .short("b")
-                .help("Load binary file")
-                .index(1),
-        )
-        .get_matches();
+    // Parse arguments using the derived parser
+    let cli = Cli::parse();
 
     let mut cpu = CPU::new();
 
-    let filename = matches
-        .value_of("binary")
-        .unwrap_or("6502_functional_test.bin");
+    // Use the parsed argument value
+    let filename = &cli.binary;
 
     if !Path::new(filename).exists() {
-        panic!("File {} does not exist", filename)
+        panic!("File {} does not exist", filename);
     }
 
     cpu.load(&fs::read(filename).unwrap(), 0);
