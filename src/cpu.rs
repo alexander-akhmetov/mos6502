@@ -354,7 +354,8 @@ impl CPU {
         self.a = result as u8;
 
         self.clear_overflow();
-        if original_a as u8 >> 7 != self.a >> 7 {
+        // Remove unnecessary cast as suggested by clippy::unnecessary_cast
+        if original_a >> 7 != self.a >> 7 {
             self.set_overflow();
         }
 
@@ -545,7 +546,8 @@ impl CPU {
             self.clear_carry();
         }
 
-        value = (value << 1) as u8;
+        // Remove unnecessary cast as suggested by clippy::unnecessary_cast
+        value <<= 1;
 
         if original_carry {
             value |= 0b0000_0001;
@@ -575,7 +577,8 @@ impl CPU {
             self.clear_carry();
         }
 
-        value = (value >> 1) as u8;
+        // Remove unnecessary cast as suggested by clippy::unnecessary_cast
+        value >>= 1;
 
         if original_carry {
             value |= 0b1000_0000;

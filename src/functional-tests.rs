@@ -16,10 +16,7 @@ extern crate env_logger;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    #[arg(
-        value_name = "FILE",
-        default_value = "6502_functional_test.bin"
-    )]
+    #[arg(value_name = "FILE", default_value = "6502_functional_test.bin")]
     binary: String,
 }
 
